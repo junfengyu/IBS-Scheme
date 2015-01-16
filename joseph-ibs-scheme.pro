@@ -9,14 +9,11 @@ SOURCES += main.c \
     buffer.c \
     xmalloc.c \
     fatal.c \
-    strlcpy.c \
     cleanup.c \
     bufbn.c \
     misc.c \
     bufaux.c \
-    bufec.c \
-    strtonum.c \
-    strlcat.c
+    bufec.c
 
 include(deployment.pri)
 qtcAddDeployment()
