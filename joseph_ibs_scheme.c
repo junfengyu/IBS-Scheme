@@ -1,17 +1,12 @@
-#include "includes.h"
-
 #include <sys/types.h>
-
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
-
 #include <openssl/evp.h>
 #include <openssl/bn.h>
 
 #include "buffer.h"
-#include "schnorr.h"
-
+#include "joseph_ibs_scheme.h"
 
 /*1024-bit MODP Group with 160-bit Prime Order Subgroup*/
 
@@ -93,44 +88,44 @@ out:
 static BIGNUM *
 extract_do_hash(const EVP_MD *evp_md, const BIGNUM *g_v, const u_char *id, u_int idlen)
 {
-	u_char *digest;
-	u_int digest_len;
-	BIGNUM *h;
-	Buffer b;
-	int success = -1;
+    u_char *digest;
+    u_int digest_len;
+    BIGNUM *h;
+    Buffer b;
+    int success = -1;
 
-	if ((h = BN_new()) == NULL) {
+    if ((h = BN_new()) == NULL) {
         return NULL;
-	}
+    }
 
-	buffer_init(&b);
+    buffer_init(&b);
     /*h =H(g^v||ID)*/
 
-	buffer_put_bignum2(&b, g_v);
+    buffer_put_bignum2(&b, g_v);
 
-	buffer_put_string(&b, id, idlen);
+    buffer_put_string(&b, id, idlen);
 
 
-	if (hash_buffer(buffer_ptr(&b), buffer_len(&b), evp_md,
-	    &digest, &digest_len) != 0) {
+    if (hash_buffer(buffer_ptr(&b), buffer_len(&b), evp_md,
+        &digest, &digest_len) != 0) {
 
-		goto out;
-	}
-	if (BN_bin2bn(digest, (int)digest_len, h) == NULL) {
+        goto out;
+    }
+    if (BN_bin2bn(digest, (int)digest_len, h) == NULL) {
 
-		goto out;
-	}
-	success = 0;
+        goto out;
+    }
+    success = 0;
 
  out:
-	buffer_free(&b);
-	bzero(digest, digest_len);
-	xfree(digest);
-	digest_len = 0;
-	if (success == 0)
-		return h;
-	BN_clear_free(h);
-	return NULL;
+    buffer_free(&b);
+    bzero(digest, digest_len);
+    xfree(digest);
+    digest_len = 0;
+    if (success == 0)
+        return h;
+    BN_clear_free(h);
+    return NULL;
 }
 
 /*
@@ -141,54 +136,54 @@ do_extract(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
     const EVP_MD *evp_md, const BIGNUM *x,
     const u_char *id, u_int idlen, BIGNUM **s_p, BIGNUM **g_r_p)
 {
-	int success = -1;
-	BIGNUM *h, *tmp, *v, *g_v, *r;
-	BN_CTX *bn_ctx;
+    int success = -1;
+    BIGNUM *h, *tmp, *v, *g_v, *r;
+    BN_CTX *bn_ctx;
 
 
-	h = g_v = r = tmp = v = NULL;
-	if ((bn_ctx = BN_CTX_new()) == NULL) {
+    h = g_v = r = tmp = v = NULL;
+    if ((bn_ctx = BN_CTX_new()) == NULL) {
 
-		goto out;
-	}
-	if ((g_v = BN_new()) == NULL ||
-	    (r = BN_new()) == NULL ||
-	    (tmp = BN_new()) == NULL) {
+        goto out;
+    }
+    if ((g_v = BN_new()) == NULL ||
+        (r = BN_new()) == NULL ||
+        (tmp = BN_new()) == NULL) {
 
-		goto out;
-	}
+        goto out;
+    }
 
-	/*
-	 * v must be a random element of Zq, so 1 <= v < q
-	 * we also exclude v = 1, since g^1 looks dangerous
-	 */
+    /*
+     * v must be a random element of Zq, so 1 <= v < q
+     * we also exclude v = 1, since g^1 looks dangerous
+     */
     if ((v = bn_rand_range_gt_one(grp_q)) == NULL) {
 
-		goto out;
-	}
+        goto out;
+    }
 
 
-	/* g_v = g^v mod p */
-	if (BN_mod_exp(g_v, grp_g, v, grp_p, bn_ctx) == -1) {
+    /* g_v = g^v mod p */
+    if (BN_mod_exp(g_v, grp_g, v, grp_p, bn_ctx) == -1) {
 
-		goto out;
-	}
+        goto out;
+    }
 
     /* h = H(g^v || id) */
     if ((h = extract_do_hash(evp_md, g_v, id, idlen)) == NULL) {
 
-		goto out;
-	}
+        goto out;
+    }
 
     /* r = v + xh mod q */
-	if (BN_mod_mul(tmp, x, h, grp_q, bn_ctx) == -1) {
+    if (BN_mod_mul(tmp, x, h, grp_q, bn_ctx) == -1) {
 
-		goto out;
-	}
+        goto out;
+    }
     if (BN_mod_add(r, v, tmp, grp_q, bn_ctx) == -1) {
 
-		goto out;
-	}
+        goto out;
+    }
 
     *g_r_p = g_v;
     *s_p = r;
@@ -243,16 +238,16 @@ do_extract(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
 //************************************************************************Test
 
 
-	success = 0;
+    success = 0;
  out:
-	BN_CTX_free(bn_ctx);
-	if (h != NULL)
-		BN_clear_free(h);
-	if (v != NULL)
-		BN_clear_free(v);
-	BN_clear_free(tmp);
+    BN_CTX_free(bn_ctx);
+    if (h != NULL)
+        BN_clear_free(h);
+    if (v != NULL)
+        BN_clear_free(v);
+    BN_clear_free(tmp);
 
-	return success;
+    return success;
 }
 
 /*
@@ -276,18 +271,18 @@ joseph_ibs_extract(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g
     if (BN_mod_exp(g_x, grp_g, x, grp_p, bn_ctx) == -1)
        goto out;
 
-	Buffer b;
+    Buffer b;
 
     if (do_extract(grp_p, grp_q, grp_g, EVP_sha1(),
         x, id, idlen, &s, &g_r) != 0)
         goto out;
 
     /* Signature is (g_r, s) */
-	buffer_init(&b);
-	/* XXX sigtype-hash as string? */
+    buffer_init(&b);
+    /* XXX sigtype-hash as string? */
     buffer_put_bignum2(&b, g_r);
     buffer_put_bignum2(&b, s);
-	*siglen = buffer_len(&b);
+    *siglen = buffer_len(&b);
 
     if(*siglen == 0)
         goto out;
@@ -297,7 +292,7 @@ joseph_ibs_extract(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g
 
     memcpy(*sig, buffer_ptr(&b), *siglen);
     success = 0;
-	buffer_free(&b);
+    buffer_free(&b);
 out:
 
     BN_CTX_free(bn_ctx);
@@ -678,32 +673,32 @@ do_verify(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
     const EVP_MD *evp_md, const BIGNUM *g_x, const u_char *id, u_int idlen, const u_char *msg, u_int msglen,
     const BIGNUM *Y, const BIGNUM *R, const BIGNUM *z)
 {
-	int success = -1;
+    int success = -1;
     BIGNUM *h, *h_RID, *g_xhh, *g_z, *hh, *R_h;
-	BIGNUM *expected = NULL;
-	BN_CTX *bn_ctx;
+    BIGNUM *expected = NULL;
+    BN_CTX *bn_ctx;
 
-	/* Avoid degenerate cases: g^0 yields a spoofable signature */
-	if (BN_cmp(g_x, BN_value_one()) <= 0) {
+    /* Avoid degenerate cases: g^0 yields a spoofable signature */
+    if (BN_cmp(g_x, BN_value_one()) <= 0) {
 
-		return -1;
-	}
-	if (BN_cmp(g_x, grp_p) >= 0) {
+        return -1;
+    }
+    if (BN_cmp(g_x, grp_p) >= 0) {
 
-		return -1;
-	}
+        return -1;
+    }
 
     hh = h = h_RID = g_xhh = R_h = g_z = expected = NULL;
-	if ((bn_ctx = BN_CTX_new()) == NULL) {
+    if ((bn_ctx = BN_CTX_new()) == NULL) {
         goto out;
-	}
+    }
     if ((g_xhh = BN_new()) == NULL ||
         (g_z = BN_new()) == NULL ||
         (hh = BN_new()) == NULL ||
         (R_h =BN_new()) == NULL ||
         (expected = BN_new()) == NULL){
         goto out;
-	}
+    }
 
 
     /* h = H(Y|| R || m) */
@@ -727,20 +722,20 @@ do_verify(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
     /* g_xhh = (g^x)^hh p*/
     if (BN_mod_exp(g_xhh, g_x, hh, grp_p, bn_ctx) == -1) {
 
-		goto out;
-	}
+        goto out;
+    }
 
 
     /* R_h = R^h */
     if (BN_mod_exp(R_h, R, h, grp_p, bn_ctx) == -1) {
         goto out;
-	}
+    }
 
 
     /* expected = g^r * R^h * g_xhh */
     if (BN_mod_mul(expected, Y, R_h, grp_p, bn_ctx) == -1) {
         goto out;
-	}
+    }
 
     if (BN_mod_mul(expected, expected, g_xhh, grp_p, bn_ctx) == -1) {
         goto out;
@@ -759,9 +754,9 @@ do_verify(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
 
 
  out:
-	BN_CTX_free(bn_ctx);
-	if (h != NULL)
-		BN_clear_free(h);
+    BN_CTX_free(bn_ctx);
+    if (h != NULL)
+        BN_clear_free(h);
     if (g_xhh!= NULL)
         BN_clear_free(g_xhh);
     if (g_z != NULL)
@@ -772,9 +767,9 @@ do_verify(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
         BN_clear_free(R_h);
     if (h_RID != NULL)
         BN_clear_free(h_RID);
-	if (expected != NULL)
-		BN_clear_free(expected);
-	return success;
+    if (expected != NULL)
+        BN_clear_free(expected);
+    return success;
 }
 
 /*
@@ -787,9 +782,9 @@ joseph_ibs_verify_buf(const BIGNUM *grp_p, const BIGNUM *grp_q,
     const BIGNUM *g_x, const u_char *id, u_int idlen,
     const u_char *sig, u_int siglen, const u_char *msg, u_int msglen)
 {
-	Buffer b;
-	int ret = -1;
-	u_int rlen;
+    Buffer b;
+    int ret = -1;
+    u_int rlen;
     BIGNUM *Y, *R, *z;
     BN_CTX *bn_ctx;
 
@@ -799,24 +794,24 @@ joseph_ibs_verify_buf(const BIGNUM *grp_p, const BIGNUM *grp_q,
         (z = BN_new()) == NULL)
     {
         goto out;
-	}
+    }
 
     if ((bn_ctx = BN_CTX_new()) == NULL) {
         goto out;
     }
 
     /* Extract Y, R and z from signature */
-	buffer_init(&b);
-	buffer_append(&b, sig, siglen);
+    buffer_init(&b);
+    buffer_append(&b, sig, siglen);
 
     buffer_get_bignum2(&b, Y);
     buffer_get_bignum2(&b, R);
     buffer_get_bignum2(&b, z);
-	rlen = buffer_len(&b);
-	buffer_free(&b);
-	if (rlen != 0) {
+    rlen = buffer_len(&b);
+    buffer_free(&b);
+    if (rlen != 0) {
         goto out;
-	}
+    }
 
 
     ret = do_verify(grp_p, grp_q, grp_g, EVP_sha1(),
@@ -829,7 +824,7 @@ joseph_ibs_verify_buf(const BIGNUM *grp_p, const BIGNUM *grp_q,
     if(z !=NULL)
         BN_clear_free(z);
 
-	return ret;
+    return ret;
 }
 
 /* Helper functions */
@@ -841,44 +836,44 @@ joseph_ibs_verify_buf(const BIGNUM *grp_p, const BIGNUM *grp_q,
 BIGNUM *
 bn_rand_range_gt_one(const BIGNUM *high)
 {
-	BIGNUM *r, *tmp;
-	int success = -1;
+    BIGNUM *r, *tmp;
+    int success = -1;
 
-	if ((tmp = BN_new()) == NULL) {
+    if ((tmp = BN_new()) == NULL) {
 
-		return NULL;
-	}
-	if ((r = BN_new()) == NULL) {
+        return NULL;
+    }
+    if ((r = BN_new()) == NULL) {
 
-		goto out;
-	}
-	if (BN_set_word(tmp, 2) != 1) {
+        goto out;
+    }
+    if (BN_set_word(tmp, 2) != 1) {
 
-		goto out;
-	}
-	if (BN_sub(tmp, high, tmp) == -1) {
+        goto out;
+    }
+    if (BN_sub(tmp, high, tmp) == -1) {
 
-		goto out;
-	}
-	if (BN_rand_range(r, tmp) == -1) {
+        goto out;
+    }
+    if (BN_rand_range(r, tmp) == -1) {
 
-		goto out;
-	}
-	if (BN_set_word(tmp, 2) != 1) {
+        goto out;
+    }
+    if (BN_set_word(tmp, 2) != 1) {
 
-		goto out;
-	}
-	if (BN_add(r, r, tmp) == -1) {
+        goto out;
+    }
+    if (BN_add(r, r, tmp) == -1) {
 
-		goto out;
-	}
-	success = 0;
+        goto out;
+    }
+    success = 0;
  out:
-	BN_clear_free(tmp);
-	if (success == 0)
-		return r;
-	BN_clear_free(r);
-	return NULL;
+    BN_clear_free(tmp);
+    if (success == 0)
+        return r;
+    BN_clear_free(r);
+    return NULL;
 }
 
 /*
@@ -890,39 +885,39 @@ int
 hash_buffer(const u_char *buf, u_int len, const EVP_MD *md,
     u_char **digestp, u_int *lenp)
 {
-	u_char digest[EVP_MAX_MD_SIZE];
-	u_int digest_len;
-	EVP_MD_CTX evp_md_ctx;
-	int success = -1;
+    u_char digest[EVP_MAX_MD_SIZE];
+    u_int digest_len;
+    EVP_MD_CTX evp_md_ctx;
+    int success = -1;
 
-	EVP_MD_CTX_init(&evp_md_ctx);
+    EVP_MD_CTX_init(&evp_md_ctx);
 
-	if (EVP_DigestInit_ex(&evp_md_ctx, md, NULL) != 1) {
+    if (EVP_DigestInit_ex(&evp_md_ctx, md, NULL) != 1) {
 
-		goto out;
-	}
-	if (EVP_DigestUpdate(&evp_md_ctx, buf, len) != 1) {
+        goto out;
+    }
+    if (EVP_DigestUpdate(&evp_md_ctx, buf, len) != 1) {
 
-		goto out;
-	}
-	if (EVP_DigestFinal_ex(&evp_md_ctx, digest, &digest_len) != 1) {
+        goto out;
+    }
+    if (EVP_DigestFinal_ex(&evp_md_ctx, digest, &digest_len) != 1) {
 
-		goto out;
-	}
+        goto out;
+    }
 
     if(digest_len == 0)
         goto out;
     *digestp = malloc(digest_len);
     if (digestp == NULL)
         goto out;
-	*lenp = digest_len;
-	memcpy(*digestp, digest, *lenp);
-	success = 0;
+    *lenp = digest_len;
+    memcpy(*digestp, digest, *lenp);
+    success = 0;
  out:
-	EVP_MD_CTX_cleanup(&evp_md_ctx);
-	bzero(digest, sizeof(digest));
-	digest_len = 0;
-	return success;
+    EVP_MD_CTX_cleanup(&evp_md_ctx);
+    bzero(digest, sizeof(digest));
+    digest_len = 0;
+    return success;
 }
 
 /*
@@ -932,29 +927,27 @@ hash_buffer(const u_char *buf, u_int len, const EVP_MD *md,
 struct modp_group *
 modp_group_from_g_p_and_q(const char *grp_g, const char *grp_p, const char *grp_q)
 {
-	struct modp_group *ret;
+    struct modp_group *ret;
 
     ret = malloc(sizeof(*ret));
     if(ret==NULL)
         return ret;
-	ret->p = ret->q = ret->g = NULL;
+    ret->p = ret->q = ret->g = NULL;
     if (BN_hex2bn(&ret->p, grp_p) == 0 ||BN_hex2bn(&ret->g, grp_g) == 0 || BN_hex2bn(&ret->q, grp_q) == 0)
-		fatal("%s: BN_hex2bn", __func__);
+        fatal("%s: BN_hex2bn", __func__);
 
-	return ret;
+    return ret;
 }
 
 void
 modp_group_free(struct modp_group *grp)
 {
-	if (grp->g != NULL)
-		BN_clear_free(grp->g);
-	if (grp->p != NULL)
-		BN_clear_free(grp->p);
-	if (grp->q != NULL)
-		BN_clear_free(grp->q);
-	bzero(grp, sizeof(*grp));
-	xfree(grp);
+    if (grp->g != NULL)
+        BN_clear_free(grp->g);
+    if (grp->p != NULL)
+        BN_clear_free(grp->p);
+    if (grp->q != NULL)
+        BN_clear_free(grp->q);
+    bzero(grp, sizeof(*grp));
+    xfree(grp);
 }
-
-

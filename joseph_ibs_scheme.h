@@ -1,30 +1,15 @@
-/* $OpenBSD: schnorr.h,v 1.1 2009/03/05 07:18:19 djm Exp $ */
-/*
- * Copyright (c) 2009 Damien Miller.  All rights reserved.
- *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- */
-
-#ifndef SCHNORR_H
-#define SCHNORR_H
+#ifndef JOSEPH_IBS_SCHEME_H
+#define JOSEPH_IBS_SCHEME_H
 
 #include <sys/types.h>
 
 #include <openssl/bn.h>
 
 struct modp_group {
-	BIGNUM *p, *q, *g;
+    BIGNUM *p, *q, *g;
 };
+
+#define KEY_LENGTH_BITS 160
 
 BIGNUM *bn_rand_range_gt_one(const BIGNUM *high);
 int hash_buffer(const u_char *, u_int, const EVP_MD *, u_char **, u_int *);
@@ -62,5 +47,5 @@ joseph_ibs_verify_buf(const BIGNUM *grp_p, const BIGNUM *grp_q,
     const BIGNUM *g_x, const u_char *id, u_int idlen,
     const u_char *sig, u_int siglen, const u_char *msg, u_int msglen);
 //////////////////////////////////////////////////////////////////////////////
-#endif
 
+#endif // JOSEPH_IBS_SCHEME_H

@@ -4,27 +4,24 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += main.c \
-    schnorr.c \
     buffer.c \
     xmalloc.c \
     fatal.c \
     bufbn.c \
     misc.c \
     bufaux.c \
-    log.c
+    log.c \
+    joseph_ibs_scheme.c
 
 include(deployment.pri)
 qtcAddDeployment()
 
 HEADERS += \
-    schnorr.h \
-    includes.h \
     buffer.h \
-    config.h \
     xmalloc.h \
-    defines.h \
     misc.h \
-    log.h
+    log.h \
+    joseph_ibs_scheme.h
 
 
 

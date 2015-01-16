@@ -2,7 +2,7 @@
 
 #include <openssl/evp.h>
 #include <openssl/bn.h>
-#include "schnorr.h"
+#include "joseph_ibs_scheme.h"
 #include "log.h"
 #include "buffer.h"
 
@@ -20,16 +20,16 @@ main(int argc, char **argv)
     printf("size of ulong is %d in your device.\n",sizeofulong);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-    //  //PKG: PKG  generate secret key and offline signature for every node
+//  //PKG: PKG  generate secret key and offline signature for each node
     joseph_ibs_setup();
+
     joseph_ibs_extract(_grp->p, _grp->q, _grp->g, _x,"10.0.0.1", 8, &secretkey, &secretkey_len);
 
     joseph_ibs_offline_sign(_grp->p, _grp->g,"data.bin");
 
 
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
-   // Signer
+// Signer:
     BIGNUM *R, *s;
     R = s = NULL;
     R = BN_new();
@@ -53,7 +53,7 @@ main(int argc, char **argv)
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
+//verifier:
 
     int ret=joseph_ibs_verify_buf(_grp->p, _grp->q, _grp->g, _g_x, "10.0.0.1", 8, sig, siglen,
                           "hello world!", 12);
