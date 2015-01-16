@@ -16,6 +16,8 @@ main(int argc, char **argv)
     u_char *secretkey,*sig;
     u_int secretkey_len, siglen;
 
+    int sizeofulong=sizeof(BN_ULONG);
+    printf("size of ulong is %d in your device.\n",sizeofulong);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
     //  //PKG: PKG  generate secret key and offline signature for every node

@@ -1,20 +1,9 @@
-/* $OpenBSD: buffer.h,v 1.21 2010/08/31 11:54:45 djm Exp $ */
-
-/*
- * Author: Tatu Ylonen <ylo@cs.hut.fi>
- * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
- *                    All rights reserved
- * Code for manipulating FIFO buffers.
- *
- * As far as I am concerned, the code I have written for this software
- * can be used freely for any purpose.  Any derived versions of this
- * software must be clearly marked as such, and if the derived work is
- * incompatible with the protocol description in the RFC file, it must be
- * called by a name other than "ssh" or "Secure Shell".
- */
-
 #ifndef BUFFER_H
 #define BUFFER_H
+
+#ifndef roundup
+# define roundup(x, y)   ((((x)+((y)-1))/(y))*(y))
+#endif
 
 typedef struct {
 	u_char	*buf;		/* Buffer for data. */

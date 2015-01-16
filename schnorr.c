@@ -9,10 +9,7 @@
 #include <openssl/evp.h>
 #include <openssl/bn.h>
 
-#include "xmalloc.h"
 #include "buffer.h"
-#include "log.h"
-
 #include "schnorr.h"
 
 
@@ -44,18 +41,11 @@ struct modp_group *_grp;
 int joseph_ibs_setup(void)
 {
 
-  //  BIGNUM *g_x, *x;
+
     BN_CTX *bn_ctx;
     struct modp_group *group;
     int success = 1;
-   // if ((x = BN_new()) == NULL ||
-     //   (g_x = BN_new() == NULL))
-    //  goto out;
 
-
-   //if ((bn_ctx = BN_CTX_new()) == NULL) {
-      // goto out;
-   //}
 
     bn_ctx = BN_CTX_new();
 
@@ -84,19 +74,8 @@ int joseph_ibs_setup(void)
         goto out;
     }
 
-
-   // if ((x = bn_rand_range_gt_one(group->q)) == NULL) {
-     //   goto out;
-   // }
-
-    //_msk=_x;
-    /* g_x = g^x */
-    //if (BN_mod_exp(g_x, group->g, x, group->p, bn_ctx) == -1) {
-     //   goto out;
-    //}
-
     _g_x=g_v;
-    _x = v;
+    _msk=_x = v;
     success = 0;
 
 out:
@@ -155,15 +134,7 @@ extract_do_hash(const EVP_MD *evp_md, const BIGNUM *g_v, const u_char *id, u_int
 }
 
 /*
- * Generate Schnorr signature to prove knowledge of private value 'x' used
- * in public exponent g^x, under group defined by 'grp_p', 'grp_q' and 'grp_g'
- * using the hash function "evp_md".
- * 'idlen' bytes from 'id' will be included in the signature hash as an anti-
- * replay salt.
- * 
- * On success, 0 is returned. The signature values are returned as *e_p
- * (g^v mod p) and *r_p (v - xh mod q). The caller must free these values.
- * On failure, -1 is returned.
+ do extract work
  */
 int
 do_extract(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
@@ -223,6 +194,8 @@ do_extract(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
     *s_p = r;
 
 //**********************************************************************************test:g^s=RX^H(R,ID)
+   //equation (1) in joseph paper
+    /*
     BIGNUM *g_s,*tmp_tmp,*tmp2;
     BN_CTX *bn_ctx_tmp;
 
@@ -236,7 +209,7 @@ do_extract(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
         error("%s: BN_new", __func__);
     }
 
-    /* g_s = g^s mod p */
+    // g_s = g^s mod p
     if (BN_mod_exp(g_s, grp_g, r, grp_p, bn_ctx_tmp) == -1) {
         error("%s: BN_mod_exp (g^v mod p)", __func__);
 
@@ -266,7 +239,7 @@ do_extract(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
         error("%s: BN_mod_mul (tmp = xv mod q)", __func__);
         goto out;
     }
-
+*/
 //************************************************************************Test
 
 
@@ -284,11 +257,6 @@ do_extract(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
 
 /*
  * Generate a secret key for identity ID
- *  private value 'x' used
- * in public exponent g^x, under group defined by 'grp_p', 'grp_q' and 'grp_g'
- * using a SHA256 hash.
- * 'idlen' bytes from 'id' will be included in the signature hash as an anti-
- * replay salt.
  * On success, 0 is returned and *siglen bytes of signature are returned in
  * *sig (caller to free). Returns -1 on failure.
  */
@@ -320,8 +288,14 @@ joseph_ibs_extract(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g
     buffer_put_bignum2(&b, g_r);
     buffer_put_bignum2(&b, s);
 	*siglen = buffer_len(&b);
-	*sig = xmalloc(*siglen);
-	memcpy(*sig, buffer_ptr(&b), *siglen);
+
+    if(*siglen == 0)
+        goto out;
+    *sig = malloc(*siglen);
+    if (sig == NULL)
+        goto out;
+
+    memcpy(*sig, buffer_ptr(&b), *siglen);
     success = 0;
 	buffer_free(&b);
 out:
@@ -338,7 +312,9 @@ out:
 }
 
 
-
+/*
+ *
+ */
 
 int joseph_ibs_offline_sign(const BIGNUM *grp_p,const BIGNUM *grp_g,const char path[])
 {
@@ -360,7 +336,7 @@ int joseph_ibs_offline_sign(const BIGNUM *grp_p,const BIGNUM *grp_g,const char p
 
     Buffer b;
     buffer_init(&b);
-    //int sizeofulong=sizeof(BN_ULONG);
+
     for(i=0;i<160;i++)
     {
         BN_set_word(big_i, i);
@@ -400,7 +376,11 @@ out:
 }
 
 
-
+/*
+ * Calculate hash component of  H(Y || R || msg)
+ * using the hash function defined by "evp_md". Returns signature as
+ * bignum or NULL on error.
+ */
 
 static BIGNUM *
 online_do_hash(const EVP_MD *evp_md, const BIGNUM *Y, const BIGNUM *R,
@@ -443,7 +423,9 @@ online_do_hash(const EVP_MD *evp_md, const BIGNUM *Y, const BIGNUM *R,
     return NULL;
 }
 
-
+/*
+ *
+ */
 
 int
 joseph_ibs_online_sign(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g, BIGNUM *R,const BIGNUM *s,
@@ -468,6 +450,8 @@ joseph_ibs_online_sign(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *g
     fileLen=ftell(file);
     fseek(file, 0, SEEK_SET);
 
+    if(fileLen==0)
+        goto out;
     //Allocate memory
     buffer=(u_char *)malloc(fileLen+1);
     if (!buffer)
@@ -551,7 +535,13 @@ joseph_ibs_online_sign(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *g
     buffer_put_bignum2(&b, R);
     buffer_put_bignum2(&b, z);
     *siglen = buffer_len(&b);
-    *sig = xmalloc(*siglen);
+
+    if(*siglen == 0)
+        goto out;
+    *sig = malloc(*siglen);
+    if (sig == NULL)
+        goto out;
+
     memcpy(*sig, buffer_ptr(&b), *siglen);
 
     buffer_free(&b);
@@ -631,7 +621,7 @@ verify_do_hash(const EVP_MD *evp_md, const BIGNUM *Y, const BIGNUM *R,
 }
 
 /*
- * Calculate hash component of  H(R ||  id)
+ * Calculate hash component of  H(R || id)
  * using the hash function defined by "evp_md". Returns signature as
  * bignum or NULL on error.
  */
@@ -855,31 +845,31 @@ bn_rand_range_gt_one(const BIGNUM *high)
 	int success = -1;
 
 	if ((tmp = BN_new()) == NULL) {
-		error("%s: BN_new", __func__);
+
 		return NULL;
 	}
 	if ((r = BN_new()) == NULL) {
-		error("%s: BN_new failed", __func__);
+
 		goto out;
 	}
 	if (BN_set_word(tmp, 2) != 1) {
-		error("%s: BN_set_word(tmp, 2)", __func__);
+
 		goto out;
 	}
 	if (BN_sub(tmp, high, tmp) == -1) {
-		error("%s: BN_sub failed (tmp = high - 2)", __func__);
+
 		goto out;
 	}
 	if (BN_rand_range(r, tmp) == -1) {
-		error("%s: BN_rand_range failed", __func__);
+
 		goto out;
 	}
 	if (BN_set_word(tmp, 2) != 1) {
-		error("%s: BN_set_word(tmp, 2)", __func__);
+
 		goto out;
 	}
 	if (BN_add(r, r, tmp) == -1) {
-		error("%s: BN_add failed (r = r + 2)", __func__);
+
 		goto out;
 	}
 	success = 0;
@@ -908,18 +898,23 @@ hash_buffer(const u_char *buf, u_int len, const EVP_MD *md,
 	EVP_MD_CTX_init(&evp_md_ctx);
 
 	if (EVP_DigestInit_ex(&evp_md_ctx, md, NULL) != 1) {
-		error("%s: EVP_DigestInit_ex", __func__);
+
 		goto out;
 	}
 	if (EVP_DigestUpdate(&evp_md_ctx, buf, len) != 1) {
-		error("%s: EVP_DigestUpdate", __func__);
+
 		goto out;
 	}
 	if (EVP_DigestFinal_ex(&evp_md_ctx, digest, &digest_len) != 1) {
-		error("%s: EVP_DigestFinal_ex", __func__);
+
 		goto out;
 	}
-	*digestp = xmalloc(digest_len);
+
+    if(digest_len == 0)
+        goto out;
+    *digestp = malloc(digest_len);
+    if (digestp == NULL)
+        goto out;
 	*lenp = digest_len;
 	memcpy(*digestp, digest, *lenp);
 	success = 0;
@@ -928,62 +923,6 @@ hash_buffer(const u_char *buf, u_int len, const EVP_MD *md,
 	bzero(digest, sizeof(digest));
 	digest_len = 0;
 	return success;
-}
-
-/* print formatted string followed by bignum */
-void
-debug3_bn(const BIGNUM *n, const char *fmt, ...)
-{
-	char *out, *h;
-	va_list args;
-
-	out = NULL;
-	va_start(args, fmt);
-	vasprintf(&out, fmt, args);
-	va_end(args);
-	if (out == NULL)
-		fatal("%s: vasprintf failed", __func__);
-
-	if (n == NULL)
-		debug3("%s(null)", out);
-	else {
-		h = BN_bn2hex(n);
-		debug3("%s0x%s", out, h);
-		free(h);
-	}
-	free(out);
-}
-
-/* print formatted string followed by buffer contents in hex */
-void
-debug3_buf(const u_char *buf, u_int len, const char *fmt, ...)
-{
-	char *out, h[65];
-	u_int i, j;
-	va_list args;
-
-	out = NULL;
-	va_start(args, fmt);
-	vasprintf(&out, fmt, args);
-	va_end(args);
-	if (out == NULL)
-		fatal("%s: vasprintf failed", __func__);
-
-	debug3("%s length %u%s", out, len, buf == NULL ? " (null)" : "");
-	free(out);
-	if (buf == NULL)
-		return;
-
-	*h = '\0';
-	for (i = j = 0; i < len; i++) {
-		snprintf(h + j, sizeof(h) - j, "%02x", buf[i]);
-		j += 2;
-		if (j >= sizeof(h) - 1 || i == len - 1) {
-			debug3("    %s", h);
-			*h = '\0';
-			j = 0;
-		}
-	}
 }
 
 /*
@@ -995,7 +934,9 @@ modp_group_from_g_p_and_q(const char *grp_g, const char *grp_p, const char *grp_
 {
 	struct modp_group *ret;
 
-	ret = xmalloc(sizeof(*ret));
+    ret = malloc(sizeof(*ret));
+    if(ret==NULL)
+        return ret;
 	ret->p = ret->q = ret->g = NULL;
     if (BN_hex2bn(&ret->p, grp_p) == 0 ||BN_hex2bn(&ret->g, grp_g) == 0 || BN_hex2bn(&ret->q, grp_q) == 0)
 		fatal("%s: BN_hex2bn", __func__);

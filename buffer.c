@@ -1,17 +1,3 @@
-/* $OpenBSD: buffer.c,v 1.32 2010/02/09 03:56:28 djm Exp $ */
-/*
- * Author: Tatu Ylonen <ylo@cs.hut.fi>
- * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
- *                    All rights reserved
- * Functions for manipulating fifo buffers (that can grow if needed).
- *
- * As far as I am concerned, the code I have written for this software
- * can be used freely for any purpose.  Any derived versions of this
- * software must be clearly marked as such, and if the derived work is
- * incompatible with the protocol description in the RFC file, it must be
- * called by a name other than "ssh" or "Secure Shell".
- */
-
 #include "includes.h"
 
 #include <sys/param.h>
@@ -171,8 +157,7 @@ int
 buffer_get_ret(Buffer *buffer, void *buf, u_int len)
 {
 	if (len > buffer->end - buffer->offset) {
-		error("buffer_get_ret: trying to get more bytes %d than in buffer %d",
-		    len, buffer->end - buffer->offset);
+
 		return (-1);
 	}
 	memcpy(buf, buffer->buf + buffer->offset, len);
@@ -193,8 +178,7 @@ int
 buffer_consume_ret(Buffer *buffer, u_int bytes)
 {
 	if (bytes > buffer->end - buffer->offset) {
-		error("buffer_consume_ret: trying to get more bytes than in buffer");
-		return (-1);
+        return (-1);
 	}
 	buffer->offset += bytes;
 	return (0);
