@@ -55,7 +55,7 @@ int joseph_ibs_setup(void)
     g_v = BN_new();
     /*
      * v must be a random element of Zq, so 1 <= v < q
-     * we also exclude v = 1, since g^1 looks dangerous
+
      */
     if ((v = bn_rand_range_gt_one(group->q)) == NULL) {
 
@@ -80,7 +80,7 @@ out:
 
 
 /*
- * Calculate hash component of extract  H(g^v ||  id)
+ * Calculate hash  H(g^v ||  id)
  * using the hash function defined by "evp_md". Returns signature as
  * bignum or NULL on error.
  */
@@ -155,7 +155,6 @@ do_extract(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *grp_g,
 
     /*
      * v must be a random element of Zq, so 1 <= v < q
-     * we also exclude v = 1, since g^1 looks dangerous
      */
     if ((v = bn_rand_range_gt_one(grp_q)) == NULL) {
 
@@ -332,7 +331,7 @@ int joseph_ibs_offline_sign(const BIGNUM *grp_p,const BIGNUM *grp_g,const char p
     Buffer b;
     buffer_init(&b);
 
-    for(i=0;i<160;i++)
+    for(i=0;i<KEY_LENGTH_BITS;i++)
     {
         BN_set_word(big_i, i);
         if (BN_exp(exp_i, big_2, big_i, bn_ctx) == -1)
@@ -345,7 +344,7 @@ int joseph_ibs_offline_sign(const BIGNUM *grp_p,const BIGNUM *grp_g,const char p
     }
 
     FILE* data;
-    if ( (data = fopen("data.bin", "wb")) == NULL )
+    if ( (data = fopen(path, "wb")) == NULL )
     {
         goto out;
     }
@@ -435,7 +434,7 @@ joseph_ibs_online_sign(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *g
     buffer_init(&Y_buffer);
     tmp=BN_new();
     unsigned long fileLen;
-    file=fopen("data.bin","rb");
+    file=fopen(path,"rb");
     if(!file){
         return -1;
     }
@@ -463,9 +462,9 @@ joseph_ibs_online_sign(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *g
     buffer_append(&Y_buffer, buffer, fileLen);
     free(buffer);
 
-    BIGNUM *BN_Array[160];
+    BIGNUM *BN_Array[KEY_LENGTH_BITS];
     int i;
-    for(i=0;i<160;i++)
+    for(i=0;i<KEY_LENGTH_BITS;i++)
     {
         buffer_get_bignum(&Y_buffer,tmp);
         BN_Array[i]=tmp;
@@ -488,7 +487,7 @@ joseph_ibs_online_sign(const BIGNUM *grp_p, const BIGNUM *grp_q, const BIGNUM *g
     tmp_Y = BN_new();
 
     BN_one(continued_mul);
-    for (i=0;i<160;i++)
+    for (i=0;i<KEY_LENGTH_BITS;i++)
     {
         tmp_Y = BN_Array[i];
         int result=BN_is_bit_set(y_random,i);
@@ -557,7 +556,7 @@ out:
     if(tmp!=NULL)
         BN_clear_free(tmp);
 
-    for(i=0;i<160;i++)
+    for(i=0;i<KEY_LENGTH_BITS;i++)
     {
         if(BN_Array[i]!=NULL)
             BN_clear_free(BN_Array[i]);

@@ -80,9 +80,7 @@ buffer_compact(Buffer *buffer)
 }
 
 /*
- * Appends space to the buffer, expanding the buffer if necessary. This does
- * not actually copy the data into the buffer, but instead returns a pointer
- * to the allocated region.
+ * Appends space to the buffer, expanding the buffer if necessary.
  */
 
 void *

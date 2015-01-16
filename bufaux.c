@@ -115,11 +115,8 @@ buffer_put_int64(Buffer *buffer, u_int64_t value)
 }
 
 /*
- * Returns an arbitrary binary string from the buffer.  The string cannot
- * be longer than 256k.  The returned value points to memory allocated
- * with xmalloc; it is the responsibility of the calling function to free
- * the data.  If length_ptr is non-NULL, the length of the returned data
- * will be stored there.  A null character will be automatically appended
+ * Returns an arbitrary binary string from the buffer.
+ * A null character will be automatically appended
  * to the returned string, and is not counted in length.
  */
 void *

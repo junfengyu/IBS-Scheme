@@ -25,7 +25,7 @@ main(int argc, char **argv)
 
     joseph_ibs_extract(_grp->p, _grp->q, _grp->g, _x,"10.0.0.1", 8, &secretkey, &secretkey_len);
 
-    joseph_ibs_offline_sign(_grp->p, _grp->g,"data.bin");
+    joseph_ibs_offline_sign(_grp->p, _grp->g,"data.bin"); //store offline signature in data.bin
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
