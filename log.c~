@@ -1,0 +1,14 @@
+
+/* Error messages that should be logged. */
+
+void
+error(const char *fmt,...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	do_log(SYSLOG_LEVEL_ERROR, fmt, args);
+	va_end(args);
+}
+
+

@@ -5,28 +5,26 @@ CONFIG -= qt
 
 SOURCES += main.c \
     schnorr.c \
-    log.c \
     buffer.c \
     xmalloc.c \
     fatal.c \
-    cleanup.c \
     bufbn.c \
     misc.c \
     bufaux.c \
-    bufec.c
+    log.c
 
 include(deployment.pri)
 qtcAddDeployment()
 
 HEADERS += \
     schnorr.h \
-    log.h \
     includes.h \
     buffer.h \
     config.h \
     xmalloc.h \
     defines.h \
-    misc.h
+    misc.h \
+    log.h
 
 
 

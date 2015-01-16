@@ -59,15 +59,20 @@ main(int argc, char **argv)
                           "hello world!", 12);
     if(ret==1)
         printf("verification result correct!\n");
-
+    else
+        printf("Failed!\n");
     ret=joseph_ibs_verify_buf(_grp->p, _grp->q, _grp->g, _g_x, "10.0.0.2", 8, sig, siglen,
                               "hello world!", 12);
     if(ret==0)
         printf("verification result correct!\n");
+    else
+        printf("Failed!\n");
     ret=joseph_ibs_verify_buf(_grp->p, _grp->q, _grp->g, _g_x, "10.0.0.1", 8, sig, siglen,
                               "hello1world!", 12);
     if(ret==0)
         printf("verification result correct!\n");
+    else
+        printf("Failed!\n");
     return 0;
 }
 
